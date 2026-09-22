@@ -1,9 +1,18 @@
 from events import add_event, find_event, show_events, sort_events_by_date
+from users import find_or_create_user
 from bookings import cancel_booking, create_booking, show_bookings
-from storage import load_data, save_data
+from storage import (
+    load_bookings,
+    load_events,
+    load_users,
+    save_bookings,
+    save_events,
+    save_users,
+)
 from utils import input_int
 
 EVENTS_FILE = "data/events.json"
+USERS_FILE = "data/users.json"
 BOOKINGS_FILE = "data/bookings.json"
 
 MENU = """
@@ -17,9 +26,10 @@ MENU = """
 """
 
 
-def main():
-    events = load_data(EVENTS_FILE)
-    bookings = load_data(BOOKINGS_FILE)
+def main() -> None:
+    events = load_events(EVENTS_FILE)
+    users = load_users(USERS_FILE)
+    bookings = load_bookings(BOOKINGS_FILE, events, users)
 
     while True:
         print(MENU)
@@ -45,12 +55,13 @@ def main():
                 print("Мероприятие не найдено.")
                 continue
             user_name = input("Ваше имя: ")
+            user = find_or_create_user(users, user_name)
             tickets_count = input_int("Количество билетов: ")
-            booking = create_booking(bookings, event, user_name, tickets_count)
+            booking = create_booking(bookings, event, user, tickets_count)
             if booking is None:
                 print("Недостаточно свободных мест.")
             else:
-                print(f"Бронирование создано, ID: {booking['id']}.")
+                print(f"Бронирование создано, ID: {booking.id}.")
 
         elif choice == "4":
             booking_id = input_int("ID бронирования: ")
@@ -63,8 +74,9 @@ def main():
             show_bookings(bookings)
 
         elif choice == "0":
-            save_data(EVENTS_FILE, events)
-            save_data(BOOKINGS_FILE, bookings)
+            save_events(EVENTS_FILE, events)
+            save_users(USERS_FILE, users)
+            save_bookings(BOOKINGS_FILE, bookings)
             print("До свидания!")
             break
 
