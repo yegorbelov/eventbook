@@ -3,9 +3,14 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from events import add_event  # noqa: E402
-from users import add_user  # noqa: E402
-from bookings import cancel_booking, create_booking, is_available  # noqa: E402
+from models.events import add_event  # noqa: E402
+from models.users import add_user  # noqa: E402
+from models.bookings import (  # noqa: E402
+    cancel_booking,
+    create_booking,
+    is_available,
+    find_booking_by_id,
+)
 
 
 def make_event(seats=10):
@@ -58,3 +63,15 @@ def test_booking_str_representation():
 
     booking.cancel()
     assert "отменено" in str(booking)
+
+
+def test_find_booking_by_id():
+    event = make_event(seats=10)
+    user = make_user()
+    bookings = []
+    booking = create_booking(bookings, event, user, 2)
+    assert find_booking_by_id(bookings, booking.id) is booking
+
+
+def test_find_booking_by_id_not_found():
+    assert find_booking_by_id([], 999) is None

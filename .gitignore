@@ -9,9 +9,9 @@ __pycache__/
 .vscode/
 .idea/
 
-data/*.json
-
 .DS_Store
 *.log
 
 tempCodeRunnerFile.py
+
+db.sqlite3

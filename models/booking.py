@@ -3,7 +3,9 @@ from models.user import User
 
 
 class Booking:
-    def __init__(self, booking_id: int, event: Event, user: User, tickets_count: int) -> None:
+    def __init__(
+        self, booking_id: int, event: Event, user: User, tickets_count: int
+    ) -> None:
         self.id = booking_id
         self.event = event
         self.user = user

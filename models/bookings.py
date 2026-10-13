@@ -3,9 +3,12 @@ from typing import List, Optional
 from models import Booking, Event, User
 
 
-def is_available(bookings: List[Booking], event: Event, tickets_count: int) -> bool:
+def is_available(
+    bookings: List[Booking], event: Event, tickets_count: int
+) -> bool:
     booked = sum(
-        b.tickets_count for b in bookings
+        b.tickets_count
+        for b in bookings
         if b.event.id == event.id and not b.is_cancelled
     )
     return event.has_capacity(booked, tickets_count)
@@ -37,3 +40,12 @@ def show_bookings(bookings: List[Booking]) -> None:
         return
     for booking in bookings:
         print(booking)
+
+
+def find_booking_by_id(
+    bookings: List[Booking], booking_id: int
+) -> Optional[Booking]:
+    for booking in bookings:
+        if booking.id == booking_id:
+            return booking
+    return None

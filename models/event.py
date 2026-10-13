@@ -1,6 +1,12 @@
 class Event:
     def __init__(
-        self, event_id: int, name: str, date: str, venue: str, seats: int, price: float
+        self,
+        event_id: int,
+        name: str,
+        date: str,
+        venue: str,
+        seats: int,
+        price: float,
     ) -> None:
         self.id = event_id
         self.name = name
