@@ -1,0 +1,34 @@
+body {
+  max-width: 900px;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.event-card {
+  padding: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+
+.booking-status {
+  font-weight: 600;
+}
+
+.site-header {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid #ddd;
+}
+
+.eventbook-logo {
+  width: 60px;
+  height: auto;
+}
+
+.site-header .nav-link {
+  font-weight: 600;
+}

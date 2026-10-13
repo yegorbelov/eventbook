@@ -15,3 +15,5 @@ __pycache__/
 tempCodeRunnerFile.py
 
 db.sqlite3
+
+.prettierignore

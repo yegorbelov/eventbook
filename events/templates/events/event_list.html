@@ -1,0 +1,7 @@
+{% extends "base.html" %} {% block title %}Мероприятия – EventBook{% endblock %}
+{% block content %}
+<h1>Мероприятия</h1>
+{% for event in events %} {% include "events/includes/event_card.html" %}
+{%empty %}
+<p>Мероприятия не найдены.</p>
+{% endfor %} {% endblock %}

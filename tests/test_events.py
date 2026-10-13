@@ -3,11 +3,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from models.events import (
+from models.events import (  # noqa: E402
     add_event,
     find_event,
     sort_events_by_date,
-)  # noqa: E402
+)
 
 
 def test_add_event():

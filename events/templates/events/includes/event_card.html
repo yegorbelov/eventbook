@@ -1,0 +1,9 @@
+<article class="card event-card mb-3">
+  <div class="card-body">
+    <h2 class="card-title">{{ event.name|default:"Без названия" }}</h2>
+    <p class="card-text">{{ event.date }}, {{ event.venue }}</p>
+    <a href="{% url 'events:detail' event.id %}" class="btn btn-primary"
+      >Подробнее</a
+    >
+  </div>
+</article>

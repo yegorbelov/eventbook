@@ -1,0 +1,14 @@
+{% load static %}
+<header class="site-header">
+  <img
+    src="{% static 'homepage/img/logo.png' %}"
+    alt="EventBook"
+    class="eventbook-logo"
+  />
+  <nav class="nav">
+    <a class="nav-link" href="{% url 'homepage:index' %}">Главная</a>
+    <a class="nav-link" href="{% url 'events:list' %}">Мероприятия</a>
+    <a class="nav-link" href="{% url 'bookings:bookings' %}">Бронирования</a>
+  </nav>
+  <header></header>
+</header>

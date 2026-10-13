@@ -1,0 +1,34 @@
+{% extends "base.html" %} {% block title %} {% if booking %}Бронирование №{{
+booking.id }} – EventBook{% else %}Бронирование не найдено – EventBook{% endif%}
+{% endblock %} {% block content %} {% if booking %}
+<div class="card">
+  <div class="card-body">
+    <h1 class="card-title">Бронирование №{{ booking.id }}</h1>
+    <p class="card-text">
+      <strong>Мероприятие:</strong>
+      <a href="{% url 'events:detail' booking.event.id %}"
+        >{{ booking.event.name }}</a
+      >
+    </p>
+    <p class="card-text"><strong>Дата:</strong> {{ booking.event.date }}</p>
+    <p class="card-text">
+      <strong>Билетов:</strong> {{ booking.tickets_count }}
+    </p>
+    <p class="card-text">
+      <strong>Пользователь:</strong> {{ booking.user.name }}
+    </p>
+    <p class="card-text">
+      <strong>Статус:</strong>
+      {% include "bookings/includes/booking_status.html" %}
+    </p>
+  </div>
+</div>
+{% else %}
+<h1 class="text-danger">Бронирование не найдено</h1>
+<p>Бронирование с указанным идентификатором отсутствует.</p>
+{% endif %}
+
+<a href="{% url 'bookings:bookings' %}" class="btn btn-outline-secondary mt-3"
+  >← к списку бронирований</a
+>
+{% endblock %}
