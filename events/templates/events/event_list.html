@@ -1,6 +1,11 @@
 {% extends "base.html" %} {% block title %}Мероприятия – EventBook{% endblock %}
 {% block content %}
 <h1>Мероприятия</h1>
+<p>
+  <a href="{% url 'events:available' %}" class="btn btn-outline-primary mb-3"
+    >Поиск свободных мест на дату</a
+  >
+</p>
 {% for event in events %} {% include "events/includes/event_card.html" %}
 {%empty %}
 <p>Мероприятия не найдены.</p>

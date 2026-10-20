@@ -6,16 +6,16 @@ booking.id }} – EventBook{% else %}Бронирование не найден�
     <h1 class="card-title">Бронирование №{{ booking.id }}</h1>
     <p class="card-text">
       <strong>Мероприятие:</strong>
-      <a href="{% url 'events:detail' booking.event.id %}"
-        >{{ booking.event.name }}</a
+      <a href="{% url 'events:detail' booking.event_id %}"
+        >{{ booking.event_name }}</a
       >
     </p>
-    <p class="card-text"><strong>Дата:</strong> {{ booking.event.date }}</p>
+    <p class="card-text"><strong>Дата:</strong> {{ booking.event_date }}</p>
     <p class="card-text">
       <strong>Билетов:</strong> {{ booking.tickets_count }}
     </p>
     <p class="card-text">
-      <strong>Пользователь:</strong> {{ booking.user.name }}
+      <strong>Пользователь:</strong> {{ booking.user_name }}
     </p>
     <p class="card-text">
       <strong>Статус:</strong>

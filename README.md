@@ -21,6 +21,7 @@ EventBook – учебное приложение для хранения инф
 
 - Python 3;
 - Django 5.2;
+- SQLite (реляционное хранение данных, модуль `sqlite3`);
 - HTML5, CSS3, JavaScript;
 - Bootstrap 5.3;
 - pytest, flake8, Git.
@@ -40,13 +41,15 @@ EventBook – учебное приложение для хранения инф
 
 ## 5. Веб-интерфейс
 
-| URL                           | Страница              | View               |
-| ----------------------------- | --------------------- | ------------------ |
-| `/`                           | главная               | `index()`          |
-| `/events/`                    | список мероприятий    | `events()`         |
-| `/events/<int:event_id>/`     | страница мероприятия  | `event_detail()`   |
-| `/bookings/`                  | список бронирований   | `bookings()`       |
-| `/bookings/<int:booking_id>/` | страница бронирования | `booking_detail()` |
+| URL                           | Страница                | View                 |
+| ----------------------------- | ----------------------- | -------------------- |
+| `/`                           | главная                 | `index()`            |
+| `/events/`                    | список мероприятий      | `events()`           |
+| `/events/<int:event_id>/`     | страница мероприятия    | `event_detail()`     |
+| `/events/available/`          | свободные места на дату | `available_events()` |
+| `/bookings/`                  | список бронирований     | `bookings()`         |
+| `/bookings/<int:booking_id>/` | страница бронирования   | `booking_detail()`   |
+| `/bookings/statistics/`       | статистика бронирований | `statistics()`       |
 
 Если мероприятие или бронирование не найдено, страница возвращает код
 статуса 404. Для несуществующих адресов настроен `handler404`.
@@ -77,7 +80,48 @@ HTML формируется шаблонами, а не Python-кодом. Фу�
   `events:list`, `events:detail`, `bookings:bookings`, `bookings:detail`.
   Ссылки формируются тегом `{% url %}`.
 
-## 7. Статические файлы
+## 7. База данных и SQL-запросы (ПР7)
+
+В проекте добавлен слой реляционного хранения данных на основе SQLite.
+Предыдущая реализация с JSON-файлами (`data/`) сохранена как исходная
+реализация предметной области.
+
+### Сущности и таблицы
+
+- `events` — мероприятия: `id`, `name`, `date`, `venue`, `seats`, `price`;
+- `users` — пользователи: `id`, `name`;
+- `bookings` — бронирования: `id`, `event_id`, `user_id`, `tickets_count`,
+  `is_cancelled`; внешние ключи `event_id → events(id)` и
+  `user_id → users(id)`.
+
+База данных хранится в `data/eventbook.sqlite`. Схема описана в
+`sql/schema.sql`, данные перенесены из JSON-файлов скриптом
+`db/import_json.py`, подключение — в `db/database.py` (включена проверка
+внешних ключей `PRAGMA foreign_keys = ON`).
+
+### SQL-запросы
+
+Все запросы собраны в `sql/queries.sql` и проверены в SQLite CLI.
+Реализованы не менее 10 запросов всех требуемых видов:
+выборка списков, фильтрация `WHERE`, соединение таблиц `JOIN`,
+агрегатные функции, группировка `GROUP BY` и фильтрация групп `HAVING`.
+Значения передаются параметризованно (заполнитель `?`).
+
+### Интеграция с Django
+
+Представления получают данные из SQLite средствами `sqlite3`
+(`sqlite3.Row`) и передают их в существующие шаблоны:
+
+- `/events/` — список мероприятий из таблицы `events`;
+- `/events/<int:event_id>/` — страница мероприятия со свободными местами;
+- `/events/available/` — поиск мероприятий со свободными местами на дату;
+- `/bookings/` — активные бронирования с данными о мероприятии и пользователе
+  (`JOIN` трёх таблиц);
+- `/bookings/<int:booking_id>/` — страница бронирования;
+- `/bookings/statistics/` — статистика бронирований по мероприятиям
+  (`GROUP BY`).
+
+## 8. Статические файлы
 
 Расположены в `homepage/static/homepage/`:
 
@@ -87,7 +131,7 @@ HTML формируется шаблонами, а не Python-кодом. Фу�
 
 Подключаются через `{% load static %}` и `{% static '...' %}`.
 
-## 8. Структура проекта
+## 9. Структура проекта
 
 ```text
 eventbook/
@@ -107,6 +151,17 @@ eventbook/
 │   ├── users.py
 │   └── bookings.py
 ├── data/
+│   ├── events.json
+│   ├── users.json
+│   ├── bookings.json
+│   └── eventbook.sqlite
+├── db/
+│   ├── __init__.py
+│   ├── database.py
+│   └── import_json.py
+├── sql/
+│   ├── schema.sql
+│   └── queries.sql
 ├── tests/
 ├── main.py
 ├── storage.py
@@ -115,7 +170,7 @@ eventbook/
 └── requirements.txt
 ```
 
-## 9. Основные функции
+## 10. Основные функции
 
 `models/events.py`: `add_event`, `find_event`, `sort_events_by_date`,
 `show_events`.
@@ -125,17 +180,18 @@ eventbook/
 `storage.py`: `load_events`, `load_users`, `load_bookings` и
 соответствующие `save_*`.
 
-## 10. Запуск и проверка
+## 11. Запуск и проверка
 
 ```bash
 pip install -r requirements.txt
+python -m db.import_json
 python manage.py runserver
 python manage.py check
 pytest -v
 flake8 . --extend-exclude=venv
 ```
 
-## 11. План развития
+## 12. План развития
 
 - перенос сущностей в Django ORM и подключение базы данных;
 - формы создания и отмены бронирований, добавления мероприятий;

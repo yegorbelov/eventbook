@@ -1,0 +1,12 @@
+{% extends "base.html" %} {% block title %}Статистика – EventBook{% endblock %}
+{% block content %}
+<h1>Статистика бронирований</h1>
+{% for item in statistics %}
+<article class="statistics-item">
+  <h2>{{ item.event_name }}</h2>
+  <p>Количество бронирований: {{ item.bookings_count }}</p>
+</article>
+{% empty %}
+<p>Данные отсутствуют.</p>
+{% endfor %}
+{% endblock %}

@@ -8,6 +8,7 @@ EventBook{% else %}Мероприятие не найдено – EventBook{% en
     <p class="card-text"><strong>Дата:</strong> {{ event.date }}</p>
     <p class="card-text"><strong>Место:</strong> {{ event.venue }}</p>
     <p class="card-text"><strong>Мест всего:</strong> {{ event.seats }}</p>
+    <p class="card-text"><strong>Свободных мест:</strong> {{ event.free_seats }}</p>
     <p class="card-text">
       <strong>Цена билета:</strong> {{ event.price }} руб.
     </p>

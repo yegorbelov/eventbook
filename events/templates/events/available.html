@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Поиск мероприятий – EventBook{% endblock %}
+
+{% block content %}
+  <h1>Мероприятия со свободными местами</h1>
+  <form method="get" class="mb-3">
+    <label for="date">Дата:</label>
+    <input type="date" id="date" name="date" value="{{ booking_date|default:'' }}">
+    <button type="submit" class="btn btn-primary">Найти</button>
+  </form>
+
+  {% if booking_date %}
+    <h2>Дата: {{ booking_date }}</h2>
+    <ul class="list-group">
+      {% for event in events %}
+        <li class="list-group-item d-flex justify-content-between">
+          <a href="{% url 'events:detail' event.id %}">{{ event.name }}, {{ event.venue }}</a>
+          <span>свободно: {{ event.free_seats }}</span>
+        </li>
+      {% empty %}
+        <li class="list-group-item">На выбранную дату мероприятий со свободными местами нет.</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+{% endblock %}

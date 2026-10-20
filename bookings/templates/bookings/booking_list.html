@@ -5,9 +5,9 @@
   {% for booking in bookings %}
   <li class="list-group-item d-flex justify-content-between align-items-center">
     <a href="{% url 'bookings:detail' booking.id %}">
-      №{{ booking.id }}: {{ booking.event.name }}
+      №{{ booking.id }}: {{ booking.event_name }}
     </a>
-    <span>{{ booking.user.name }}, билетов: {{ booking.tickets_count }}</span>
+    <span>{{ booking.user_name }}, билетов: {{ booking.tickets_count }}</span>
     {% include "bookings/includes/booking_status.html" %}
   </li>
   {% empty %}
