@@ -23,7 +23,14 @@ def save_json(filename: str, data: list) -> None:
 def load_events(filename: str) -> List[Event]:
     raw_events = load_json(filename)
     return [
-        Event(item["id"], item["name"], item["date"], item["venue"], item["seats"], item["price"])
+        Event(
+            item["id"],
+            item["name"],
+            item["date"],
+            item["venue"],
+            item["seats"],
+            item["price"],
+        )
         for item in raw_events
     ]
 
@@ -53,7 +60,9 @@ def save_users(filename: str, users: List[User]) -> None:
     save_json(filename, data)
 
 
-def load_bookings(filename: str, events: List[Event], users: List[User]) -> List[Booking]:
+def load_bookings(
+    filename: str, events: List[Event], users: List[User]
+) -> List[Booking]:
     raw_bookings = load_json(filename)
     bookings = []
     for item in raw_bookings:

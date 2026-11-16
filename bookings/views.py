@@ -1,88 +1,122 @@
-import sqlite3
+from datetime import datetime
 
-from django.shortcuts import render
+from django.core.paginator import Paginator
+from django.db.models import Count, F, Q, Sum
+from django.shortcuts import get_object_or_404, render
 
-DB_PATH = "data/eventbook.sqlite"
+from bookings.models import Booking
+from events.models import Event
+from users.models import User
+
+PAGE_SIZE = 5
+
+SORT_FIELDS = {
+    "date": "event__date",
+    "event": "event__name",
+    "user": "user__name",
+    "tickets": "tickets_count",
+}
+DEFAULT_SORT = "date"
 
 
 def bookings(request):
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    bookings_list = conn.execute(
-        """
-        SELECT
-            bookings.id,
-            events.name AS event_name,
-            events.date AS event_date,
-            users.name AS user_name,
-            bookings.tickets_count,
-            bookings.is_cancelled
-        FROM bookings
-        JOIN events ON bookings.event_id = events.id
-        JOIN users ON bookings.user_id = users.id
-        WHERE bookings.is_cancelled = 0
-        ORDER BY bookings.id
-        """
-    ).fetchall()
-    conn.close()
-    context = {"bookings": bookings_list}
+    search = request.GET.get("q", "").strip()
+    event_date = request.GET.get("date", "").strip()
+    event_id = request.GET.get("event", "").strip()
+    user_id = request.GET.get("user", "").strip()
+    sort = request.GET.get("sort", DEFAULT_SORT)
+    error = None
+
+    bookings_data = Booking.objects.filter(is_cancelled=False)
+
+    if search:
+        bookings_data = bookings_data.filter(
+            Q(event__name__icontains=search) | Q(user__name__icontains=search)
+        )
+
+    if event_date:
+        try:
+            selected_date = datetime.strptime(event_date, "%Y-%m-%d").date()
+        except ValueError:
+            error = "Укажите корректную дату."
+        else:
+            bookings_data = bookings_data.filter(
+                event__date__date=selected_date
+            )
+
+    if event_id.isdigit():
+        bookings_data = bookings_data.filter(event_id=int(event_id))
+    if user_id.isdigit():
+        bookings_data = bookings_data.filter(user_id=int(user_id))
+
+    sort_field = SORT_FIELDS.get(sort, SORT_FIELDS[DEFAULT_SORT])
+    bookings_data = (
+        bookings_data.annotate(
+            event_name=F("event__name"),
+            event_date=F("event__date"),
+            user_name=F("user__name"),
+        )
+        .values(
+            "id",
+            "event_name",
+            "event_date",
+            "user_name",
+            "tickets_count",
+            "is_cancelled",
+        )
+        .order_by(sort_field, "id")
+    )
+
+    paginator = Paginator(bookings_data, PAGE_SIZE)
+    page_obj = paginator.get_page(request.GET.get("page"))
+
+    context = {
+        "bookings": page_obj,
+        "page_obj": page_obj,
+        "search": search,
+        "booking_date": event_date,
+        "selected_event": event_id,
+        "selected_user": user_id,
+        "sort": sort,
+        "events": Event.objects.order_by("name"),
+        "users": User.objects.order_by("name"),
+        "error": error,
+    }
     return render(request, "bookings/booking_list.html", context)
 
 
 def booking_detail(request, booking_id):
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    booking = conn.execute(
-        """
-        SELECT
-            bookings.id,
-            events.name AS event_name,
-            events.id AS event_id,
-            events.date AS event_date,
-            users.name AS user_name,
-            bookings.tickets_count,
-            bookings.is_cancelled
-        FROM bookings
-        JOIN events ON bookings.event_id = events.id
-        JOIN users ON bookings.user_id = users.id
-        WHERE bookings.id = ?
-        """,
-        [booking_id],
-    ).fetchone()
-    conn.close()
-
-    if booking is None:
-        return render(
-            request,
-            "bookings/booking_detail.html",
-            {"booking": None},
-            status=404,
-        )
-
-    booking = dict(booking)
-    context = {"booking": booking}
-    return render(request, "bookings/booking_detail.html", context)
+    booking = get_object_or_404(
+        Booking.objects.select_related("event", "user"),
+        pk=booking_id,
+    )
+    return render(
+        request,
+        "bookings/booking_detail.html",
+        {"booking": booking},
+    )
 
 
 def statistics(request):
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    statistics_data = conn.execute(
-        """
-        SELECT
-            events.name AS event_name,
-            COUNT(bookings.id) AS bookings_count
-        FROM events
-        LEFT JOIN bookings
-            ON events.id = bookings.event_id
-            AND bookings.is_cancelled = 0
-        GROUP BY events.id, events.name
-        ORDER BY bookings_count DESC
-        """
-    ).fetchall()
-    conn.close()
+    statistics_data = (
+        Event.objects.annotate(
+            event_name=F("name"),
+            bookings_count=Count(
+                "bookings",
+                filter=Q(bookings__is_cancelled=False),
+            ),
+        )
+        .values("event_name", "bookings_count")
+        .order_by("-bookings_count", "event_name")
+    )
+
+    totals = Booking.objects.filter(is_cancelled=False).aggregate(
+        bookings=Count("id"),
+        tickets=Sum("tickets_count"),
+    )
+
     return render(
         request,
         "bookings/statistics.html",
-        {"statistics": statistics_data},
+        {"statistics": statistics_data, "totals": totals},
     )

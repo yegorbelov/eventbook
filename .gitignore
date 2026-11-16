@@ -5,15 +5,27 @@ env/
 __pycache__/
 *.pyc
 *.pyo
+*.egg-info/
+build/
+dist/
+
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
 
 .vscode/
 .idea/
-
 .DS_Store
-*.log
-
 tempCodeRunnerFile.py
 
-db.sqlite3
+*.log
+*.bak
 
-.prettierignore
+db.sqlite3
+db.sqlite3-journal
+staticfiles/
+media/
+
+.env

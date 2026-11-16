@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     "homepage.apps.HomepageConfig",
     "events.apps.EventsConfig",
     "bookings.apps.BookingsConfig",
+    "users.apps.UsersConfig",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",

@@ -1,12 +1,27 @@
-{% extends "base.html" %} {% block title %}Мероприятия – EventBook{% endblock %}
+{% extends "base.html" %}
+{% block title %}Мероприятия – EventBook{% endblock %}
 {% block content %}
-<h1>Мероприятия</h1>
-<p>
-  <a href="{% url 'events:available' %}" class="btn btn-outline-primary mb-3"
-    >Поиск свободных мест на дату</a
-  >
-</p>
-{% for event in events %} {% include "events/includes/event_card.html" %}
-{%empty %}
-<p>Мероприятия не найдены.</p>
-{% endfor %} {% endblock %}
+  <h1>Мероприятия</h1>
+  <form method="get" class="row g-2 mb-3">
+    <div class="col-md-6">
+      <input type="text"
+             name="q"
+             class="form-control"
+             value="{{ search }}"
+             placeholder="Название мероприятия">
+    </div>
+    <div class="col-auto">
+      <button type="submit" class="btn btn-primary">Найти</button>
+      <a href="{% url 'events:list' %}" class="btn btn-outline-secondary">Сбросить</a>
+    </div>
+  </form>
+  <p>
+    <a href="{% url 'events:available' %}"
+       class="btn btn-outline-primary mb-3">Поиск свободных мест на дату</a>
+  </p>
+  {% for event in events %}
+    {% include "events/includes/event_card.html" %}
+  {% empty %}
+    <p>Мероприятия не найдены.</p>
+  {% endfor %}
+{% endblock %}

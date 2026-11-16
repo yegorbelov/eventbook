@@ -1,101 +1,87 @@
-import sqlite3
+from datetime import datetime
 
-from django.shortcuts import render
+from django.db.models import ExpressionWrapper, F, IntegerField, Q, Sum
+from django.db.models.functions import Coalesce
+from django.shortcuts import get_object_or_404, render
 
-DB_PATH = "data/eventbook.sqlite"
+from events.models import Event
+
+
+def with_free_seats(queryset):
+    """Добавляет к мероприятиям занятые и свободные места.
+
+    Учитываются только активные бронирования: отменённые места
+    не занимают. Мероприятия без бронирований остаются в выборке,
+    у них booked = 0.
+    """
+    return queryset.annotate(
+        booked=Coalesce(
+            Sum(
+                "bookings__tickets_count",
+                filter=Q(bookings__is_cancelled=False),
+            ),
+            0,
+            output_field=IntegerField(),
+        ),
+    ).annotate(
+        free_seats=ExpressionWrapper(
+            F("seats") - F("booked"),
+            output_field=IntegerField(),
+        ),
+    )
 
 
 def events(request):
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    events_list = conn.execute(
-        """
-        SELECT id, name, date, venue, seats, price
-        FROM events
-        ORDER BY date
-        """
-    ).fetchall()
-    conn.close()
-    context = {"events": events_list}
+    search = request.GET.get("q", "").strip()
+
+    events_list = Event.objects.all()
+
+    # Поиск по названию мероприятия.
+    if search:
+        events_list = events_list.filter(name__icontains=search)
+
+    events_list = events_list.order_by("date", "pk")
+
+    context = {"events": events_list, "search": search}
     return render(request, "events/event_list.html", context)
 
 
 def event_detail(request, event_id):
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    event = conn.execute(
-        """
-        SELECT id, name, date, venue, seats, price
-        FROM events
-        WHERE id = ?
-        """,
-        [event_id],
-    ).fetchone()
+    # 404 формируется внутри get_object_or_404, если записи нет.
+    event = get_object_or_404(
+        with_free_seats(Event.objects.all()),
+        pk=event_id,
+    )
 
-    available = None
-    free_seats = None
-    if event is not None:
-        booked = conn.execute(
-            """
-            SELECT COALESCE(SUM(tickets_count), 0)
-            FROM bookings
-            WHERE event_id = ? AND is_cancelled = 0
-            """,
-            [event_id],
-        ).fetchone()[0]
-        free_seats = event["seats"] - booked
-        available = free_seats > 0
+    # Атрибуты, которые раньше добавлялись в словарь.
+    event.available = event.free_seats > 0
 
-    conn.close()
-
-    if event is None:
-        return render(
-            request,
-            "events/event_detail.html",
-            {"event": None, "available": False},
-            status=404,
-        )
-
-    event = dict(event)
-    event["available"] = available
-    event["free_seats"] = free_seats
-
-    context = {"event": event, "available": available}
+    context = {"event": event, "available": event.available}
     return render(request, "events/event_detail.html", context)
 
 
 def available_events(request):
-    booking_date = request.GET.get("date")
+    booking_date = request.GET.get("date", "").strip()
     events_list = []
+    error = None
+
     if booking_date:
-        conn = sqlite3.connect(DB_PATH)
-        conn.row_factory = sqlite3.Row
-        events_list = conn.execute(
-            """
-            SELECT
-                e.id,
-                e.name,
-                e.date,
-                e.venue,
-                e.seats,
-                e.price,
-                e.seats - COALESCE(b.booked, 0) AS free_seats
-            FROM events e
-            LEFT JOIN (
-                SELECT event_id, SUM(tickets_count) AS booked
-                FROM bookings
-                WHERE is_cancelled = 0
-                GROUP BY event_id
-            ) b ON e.id = b.event_id
-            WHERE e.date = ?
-              AND e.seats - COALESCE(b.booked, 0) > 0
-            ORDER BY e.name
-            """,
-            [booking_date],
-        ).fetchall()
-        conn.close()
+        try:
+            selected_date = datetime.strptime(booking_date, "%Y-%m-%d").date()
+        except ValueError:
+            error = "Укажите корректную дату."
+        else:
+            # Мероприятия на выбранную дату, из которых исключены
+            # те, где не осталось свободных мест.
+            events_list = (
+                with_free_seats(Event.objects.filter(date__date=selected_date))
+                .exclude(free_seats__lte=0)
+                .order_by("name")
+            )
+
     context = {
         "events": events_list,
         "booking_date": booking_date,
+        "error": error,
     }
     return render(request, "events/available.html", context)
