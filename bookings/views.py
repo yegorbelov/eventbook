@@ -10,6 +10,7 @@ from users.models import User
 
 PAGE_SIZE = 5
 
+
 SORT_FIELDS = {
     "date": "event__date",
     "event": "event__name",
@@ -27,7 +28,7 @@ def bookings(request):
     sort = request.GET.get("sort", DEFAULT_SORT)
     error = None
 
-    bookings_data = Booking.objects.filter(is_cancelled=False)
+    bookings_data = Booking.objects.active()
 
     if search:
         bookings_data = bookings_data.filter(
@@ -40,9 +41,7 @@ def bookings(request):
         except ValueError:
             error = "Укажите корректную дату."
         else:
-            bookings_data = bookings_data.filter(
-                event__date__date=selected_date
-            )
+            bookings_data = bookings_data.for_date(selected_date)
 
     if event_id.isdigit():
         bookings_data = bookings_data.filter(event_id=int(event_id))
@@ -62,7 +61,7 @@ def bookings(request):
             "event_date",
             "user_name",
             "tickets_count",
-            "is_cancelled",
+            "status",
         )
         .order_by(sort_field, "id")
     )
@@ -103,16 +102,21 @@ def statistics(request):
             event_name=F("name"),
             bookings_count=Count(
                 "bookings",
-                filter=Q(bookings__is_cancelled=False),
+                filter=Q(bookings__status=Booking.Status.ACTIVE),
             ),
         )
         .values("event_name", "bookings_count")
         .order_by("-bookings_count", "event_name")
     )
 
-    totals = Booking.objects.filter(is_cancelled=False).aggregate(
-        bookings=Count("id"),
-        tickets=Sum("tickets_count"),
+    totals = Booking.objects.aggregate(
+        bookings=Count("id", filter=Q(status=Booking.Status.ACTIVE)),
+        cancelled=Count("id", filter=Q(status=Booking.Status.CANCELLED)),
+        completed=Count("id", filter=Q(status=Booking.Status.COMPLETED)),
+        tickets=Sum(
+            "tickets_count",
+            filter=Q(status=Booking.Status.ACTIVE),
+        ),
     )
 
     return render(
