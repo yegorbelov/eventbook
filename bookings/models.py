@@ -46,6 +46,10 @@ class Booking(models.Model):
         default=Status.ACTIVE,
         verbose_name="Статус",
     )
+    is_cancelled = models.BooleanField(
+        default=False,
+        verbose_name="Бронирование отменено",
+    )
 
     objects = BookingQuerySet.as_manager()
 
@@ -66,7 +70,7 @@ class Booking(models.Model):
             .aggregate(total=Sum("tickets_count"))["total"]
             or 0
         )
-        free = self.event.seats - booked
+        free = max(self.event.seats - booked, 0)
         if self.tickets_count > free:
             raise ValidationError(f"Недостаточно мест: свободно {free}.")
 

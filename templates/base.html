@@ -14,6 +14,9 @@
   </head>
   <body class="d-flex flex-column min-vh-100">
     {% include "includes/header.html" %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+    {% endfor %}
     <main class="flex-grow-1">
       {% block content %}{% endblock %}
     </main>

@@ -6,7 +6,7 @@
       <h1 class="card-title">Бронирование №{{ booking.id }}</h1>
       <p class="card-text">
         <strong>Мероприятие:</strong>
-        <a href="{% url 'events:detail' booking.event_id %}">{{ booking.event.name }}</a>
+        <a href="{{ booking.event.get_absolute_url }}">{{ booking.event.name }}</a>
       </p>
       <p class="card-text">
         <strong>Дата:</strong> {{ booking.event.date|date:"d.m.Y H:i" }}
@@ -21,6 +21,18 @@
         <strong>Статус:</strong>
         {% include "bookings/includes/booking_status.html" %}
       </p>
+      {% if booking.status == "active" %}
+        <div class="d-flex gap-2">
+          <a href="{% url 'bookings:booking_update' booking.pk %}"
+             class="btn btn-primary">Изменить</a>
+          <form method="post"
+                action="{% url 'bookings:booking_cancel' booking.pk %}"
+                onsubmit="return confirm('Отменить бронирование?');">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-danger">Отменить бронирование</button>
+          </form>
+        </div>
+      {% endif %}
     </div>
   </div>
   <a href="{% url 'bookings:bookings' %}"

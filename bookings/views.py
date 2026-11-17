@@ -1,12 +1,12 @@
-from datetime import datetime
-
+from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Count, F, Q, Sum
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
 
+from bookings.forms import BookingFilterForm, BookingForm
 from bookings.models import Booking
 from events.models import Event
-from users.models import User
 
 PAGE_SIZE = 5
 
@@ -21,34 +21,26 @@ DEFAULT_SORT = "date"
 
 
 def bookings(request):
-    search = request.GET.get("q", "").strip()
-    event_date = request.GET.get("date", "").strip()
-    event_id = request.GET.get("event", "").strip()
-    user_id = request.GET.get("user", "").strip()
-    sort = request.GET.get("sort", DEFAULT_SORT)
-    error = None
+    form = BookingFilterForm(request.GET)
+    form.is_valid()
+    data = form.cleaned_data
 
     bookings_data = Booking.objects.active()
 
-    if search:
+    if data.get("q"):
         bookings_data = bookings_data.filter(
-            Q(event__name__icontains=search) | Q(user__name__icontains=search)
+            Q(event__name__icontains=data["q"])
+            | Q(user__name__icontains=data["q"])
         )
+    if data.get("date"):
+        bookings_data = bookings_data.for_date(data["date"])
+    if data.get("event"):
+        bookings_data = bookings_data.filter(event=data["event"])
+    if data.get("user"):
+        bookings_data = bookings_data.filter(user=data["user"])
 
-    if event_date:
-        try:
-            selected_date = datetime.strptime(event_date, "%Y-%m-%d").date()
-        except ValueError:
-            error = "Укажите корректную дату."
-        else:
-            bookings_data = bookings_data.for_date(selected_date)
-
-    if event_id.isdigit():
-        bookings_data = bookings_data.filter(event_id=int(event_id))
-    if user_id.isdigit():
-        bookings_data = bookings_data.filter(user_id=int(user_id))
-
-    sort_field = SORT_FIELDS.get(sort, SORT_FIELDS[DEFAULT_SORT])
+    sort = data.get("sort") or DEFAULT_SORT
+    sort_field = SORT_FIELDS[sort]
     bookings_data = (
         bookings_data.annotate(
             event_name=F("event__name"),
@@ -72,14 +64,7 @@ def bookings(request):
     context = {
         "bookings": page_obj,
         "page_obj": page_obj,
-        "search": search,
-        "booking_date": event_date,
-        "selected_event": event_id,
-        "selected_user": user_id,
-        "sort": sort,
-        "events": Event.objects.order_by("name"),
-        "users": User.objects.order_by("name"),
-        "error": error,
+        "filter_form": form,
     }
     return render(request, "bookings/booking_list.html", context)
 
@@ -94,6 +79,70 @@ def booking_detail(request, booking_id):
         "bookings/booking_detail.html",
         {"booking": booking},
     )
+
+
+def booking_create(request):
+    if request.method == "POST":
+        form = BookingForm(request.POST)
+        if form.is_valid():
+            booking = form.save()
+            messages.success(request, f"Бронирование №{booking.pk} создано.")
+            return redirect("bookings:detail", booking_id=booking.pk)
+    else:
+        initial = {}
+        event_id = request.GET.get("event", "")
+        if event_id.isdigit():
+            initial["event"] = int(event_id)
+        form = BookingForm(initial=initial)
+
+    context = {
+        "form": form,
+        "title": "Новое бронирование",
+        "submit_label": "Создать",
+    }
+    return render(request, "bookings/booking_form.html", context)
+
+
+def booking_update(request, booking_id):
+    booking = get_object_or_404(
+        Booking.objects.select_related("event", "user"),
+        pk=booking_id,
+    )
+
+    if booking.status != Booking.Status.ACTIVE:
+        messages.error(
+            request,
+            "Изменять можно только активные бронирования.",
+        )
+        return redirect("bookings:detail", booking_id=booking.pk)
+
+    if request.method == "POST":
+        form = BookingForm(request.POST, instance=booking)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Изменения сохранены.")
+            return redirect("bookings:detail", booking_id=booking.pk)
+    else:
+        form = BookingForm(instance=booking)
+
+    context = {
+        "form": form,
+        "title": f"Бронирование №{booking.pk}",
+        "submit_label": "Сохранить",
+    }
+    return render(request, "bookings/booking_form.html", context)
+
+
+@require_POST
+def booking_cancel(request, booking_id):
+    booking = get_object_or_404(Booking, pk=booking_id)
+
+    if booking.status == Booking.Status.ACTIVE:
+        booking.cancel()
+        messages.success(request, f"Бронирование №{booking.pk} отменено.")
+    else:
+        messages.error(request, "Это бронирование уже нельзя отменить.")
+    return redirect("bookings:detail", booking_id=booking.pk)
 
 
 def statistics(request):

@@ -6,6 +6,8 @@ from events.slugs import make_slug
 
 LARGE_EVENT_SEATS = 100
 
+RESERVED_SLUGS = {"available", "create"}
+
 
 class Event(models.Model):
     name = models.CharField(
@@ -35,7 +37,12 @@ class Event(models.Model):
         decimal_places=2,
         verbose_name="Цена",
     )
-
+    image = models.ImageField(
+        upload_to="events/",
+        blank=True,
+        null=True,
+        verbose_name="Афиша",
+    )
     is_large = models.GeneratedField(
         expression=Case(
             When(seats__gte=LARGE_EVENT_SEATS, then=Value(True)),
@@ -62,6 +69,8 @@ class Event(models.Model):
     def save(self, *args, **kwargs):
         if not self.slug:
             base = make_slug(self.name) or "event"
+            if base in RESERVED_SLUGS:
+                base = f"{base}-event"
             slug, number = base, 2
             while Event.objects.filter(slug=slug).exists():
                 slug = f"{base}-{number}"

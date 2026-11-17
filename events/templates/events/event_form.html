@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Новое мероприятие – EventBook{% endblock %}
+{% block content %}
+    <h1>Новое мероприятие</h1>
+    <form method="post" enctype="multipart/form-data" novalidate class="mt-3">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+                {% for error in form.non_field_errors %}
+                    <div>{{ error }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        {% for field in form %}
+            <div class="mb-3">
+                {{ field.label_tag }}
+                {{ field }}
+                {% if field.help_text %}
+                    <div class="form-text">{{ field.help_text }}</div>
+                {% endif %}
+                {% for error in field.errors %}
+                    <div class="text-danger small">{{ error }}</div>
+                {% endfor %}
+            </div>
+        {% endfor %}
+        <button type="submit" class="btn btn-primary">Создать</button>
+        <a href="{% url 'events:list' %}" class="btn btn-outline-secondary">Назад к списку</a>
+    </form>
+{% endblock %}

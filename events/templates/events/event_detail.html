@@ -4,6 +4,11 @@
   <div class="card">
     <div class="card-body">
       <h1 class="card-title">{{ event.name }}</h1>
+      {% if event.image %}
+        <img src="{{ event.image.url }}"
+             alt="{{ event.name }}"
+             class="img-fluid rounded mb-3">
+      {% endif %}
       <p class="card-text"><strong>ID:</strong> {{ event.id }}</p>
       <p class="card-text">
         <strong>Дата:</strong> {{ event.date|date:"d.m.Y H:i" }}
@@ -24,6 +29,10 @@
           <span class="badge bg-danger">мест нет</span>
         {% endif %}
       </p>
+      {% if available %}
+        <a href="{% url 'bookings:booking_create' %}?event={{ event.pk }}"
+           class="btn btn-primary">Забронировать</a>
+      {% endif %}
     </div>
   </div>
   <a href="{% url 'events:list' %}" class="btn btn-outline-secondary mt-3">← к списку мероприятий</a>

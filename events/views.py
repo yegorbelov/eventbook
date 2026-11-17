@@ -1,10 +1,12 @@
 from datetime import datetime
 
+from django.contrib import messages
 from django.db.models import ExpressionWrapper, F, IntegerField, Q, Sum
 from django.db.models.functions import Coalesce
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
 
 from bookings.models import Booking
+from events.forms import EventForm
 from events.models import Event
 
 
@@ -50,6 +52,19 @@ def event_detail(request, slug):
 
     context = {"event": event, "available": event.available}
     return render(request, "events/event_detail.html", context)
+
+
+def event_create(request):
+    if request.method == "POST":
+        form = EventForm(request.POST, request.FILES)
+        if form.is_valid():
+            event = form.save()
+            messages.success(request, f"Мероприятие «{event.name}» создано.")
+            return redirect(event)
+    else:
+        form = EventForm()
+
+    return render(request, "events/event_form.html", {"form": form})
 
 
 def available_events(request):
